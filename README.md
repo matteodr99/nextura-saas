@@ -5,6 +5,7 @@ A modern, production-ready SaaS starter kit built with Next.js, TypeScript, Pris
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square)
 ![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?style=flat-square)
+![Supabase](https://img.shields.io/badge/Supabase-integrated-3ECF8E?style=flat-square)
 ![Stripe](https://img.shields.io/badge/Stripe-integrated-635BFF?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
@@ -28,7 +29,7 @@ A modern, production-ready SaaS starter kit built with Next.js, TypeScript, Pris
 | Styling    | Tailwind CSS            |
 | Auth       | NextAuth.js v4          |
 | ORM        | Prisma v5               |
-| Database   | PostgreSQL (Neon)       |
+| Database   | PostgreSQL (Supabase)   |
 | Payments   | Stripe                  |
 | Deployment | Vercel                  |
 
@@ -76,7 +77,7 @@ nextura-saas/
 
 - [Node.js](https://nodejs.org/) v18 or higher
 - [pnpm](https://pnpm.io/) — install with `npm install -g pnpm`
-- A [Neon](https://neon.tech) account (free) — PostgreSQL database
+- A [Supabase](https://supabase.com) account (free) — PostgreSQL database
 - A [Stripe](https://stripe.com) account (free) — payments
 - A [Vercel](https://vercel.com) account (free) — deployment
 
@@ -102,11 +103,22 @@ This installs all packages including:
 - `stripe` + `@stripe/stripe-js` — server-side and client-side Stripe SDKs
 - `bcryptjs` — secure password hashing
 
-### 3. Set up the database (Neon)
+### 3. Set up the database (Supabase)
 
-1. Go to [neon.tech](https://neon.tech) and create a free account
-2. Create a new project called `nextura`
-3. Go to **Dashboard → Connection string** and copy the URI (it starts with `postgresql://`)
+1. Go to [supabase.com](https://supabase.com) and create a free account
+2. Create a new project called `nextura` and choose a secure database password — save it, you will need it shortly
+3. Wait for the project to be ready (about 30 seconds)
+4. Go to **Settings → Database → Connection string**
+5. Select **Transaction pooler** and enable **Use IPv4 connection (Shared Pooler)** if your network does not support IPv6
+6. Copy the URI — it looks like:
+   ```
+   postgresql://postgres.xxxx:[YOUR-PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres
+   ```
+7. Replace `[YOUR-PASSWORD]` with your actual database password
+
+> **Note:** Supabase projects on the free tier pause after 7 days of inactivity. If you get a connection error, log in to Supabase and resume the project first.
+
+> **Note:** Port `5432` (direct connection) may be blocked on some networks. Always use the **Transaction pooler** connection string on port `6543` for local development.
 
 ### 4. Configure environment variables
 
@@ -114,7 +126,7 @@ Create a `.env` file in the root of the project:
 
 ```env
 # Database
-DATABASE_URL="postgresql://..."
+DATABASE_URL="postgresql://postgres.xxxx:[YOUR-PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres"
 
 # NextAuth
 NEXTAUTH_URL="http://localhost:3000"
@@ -157,7 +169,7 @@ If `openssl` is not available on Windows, you can generate a secret online at [g
 pnpm prisma db push
 ```
 
-This creates all tables (`User`, `Account`, `Session`, `VerificationToken`) in your Neon database.
+This creates all tables (`User`, `Account`, `Session`, `VerificationToken`) in your Supabase database.
 
 ### 7. Generate the Prisma client
 
@@ -265,17 +277,17 @@ After deploy, register a production webhook endpoint with Stripe:
 
 ## Environment Variables Reference
 
-| Variable                             | Description                                             |
-| ------------------------------------ | ------------------------------------------------------- |
-| `DATABASE_URL`                       | PostgreSQL connection string from Neon                  |
-| `NEXTAUTH_URL`                       | Full URL of your app (`http://localhost:3000` in dev)   |
-| `NEXTAUTH_SECRET`                    | Random secret for signing JWT tokens                    |
-| `GOOGLE_CLIENT_ID`                   | Google OAuth client ID (optional)                       |
-| `GOOGLE_CLIENT_SECRET`               | Google OAuth client secret (optional)                   |
-| `STRIPE_SECRET_KEY`                  | Stripe secret key (`sk_test_...` or `sk_live_...`)      |
-| `STRIPE_WEBHOOK_SECRET`              | Stripe webhook signing secret (`whsec_...`)             |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (`pk_test_...` or `pk_live_...`) |
-| `STRIPE_PRO_PRICE_ID`                | Stripe Price ID for the Pro plan (`price_...`)          |
+| Variable                             | Description                                                                |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| `DATABASE_URL`                       | PostgreSQL connection string from Supabase (Transaction pooler, port 6543) |
+| `NEXTAUTH_URL`                       | Full URL of your app (`http://localhost:3000` in dev)                      |
+| `NEXTAUTH_SECRET`                    | Random secret for signing JWT tokens                                       |
+| `GOOGLE_CLIENT_ID`                   | Google OAuth client ID (optional)                                          |
+| `GOOGLE_CLIENT_SECRET`               | Google OAuth client secret (optional)                                      |
+| `STRIPE_SECRET_KEY`                  | Stripe secret key (`sk_test_...` or `sk_live_...`)                         |
+| `STRIPE_WEBHOOK_SECRET`              | Stripe webhook signing secret (`whsec_...`)                                |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (`pk_test_...` or `pk_live_...`)                    |
+| `STRIPE_PRO_PRICE_ID`                | Stripe Price ID for the Pro plan (`price_...`)                             |
 
 ## Adding Google OAuth (Optional)
 
