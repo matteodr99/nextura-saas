@@ -262,18 +262,50 @@ git push -u origin main
    - Change `NEXTAUTH_URL` to your Vercel domain (e.g. `https://nextura-saas.vercel.app`)
 5. Click **Deploy**
 
-### 3. Set up the production Stripe webhook
+### 3. Deploy & register Stripe webhook (production)
 
-After deploy, register a production webhook endpoint with Stripe:
+After your project is deployed on Vercel, register a production webhook endpoint in the Stripe Dashboard so your app receives payment events and updates user plans.
 
-1. Go to **Stripe Dashboard → Developers → Webhooks**
-2. Click **Add endpoint**
-3. Set the URL to: `https://your-domain.vercel.app/api/stripe/webhook`
-4. Select these events:
-   - `checkout.session.completed`
-   - `invoice.payment_succeeded`
-5. Copy the **Signing secret** (`whsec_...`) and add it to Vercel's environment variables as `STRIPE_WEBHOOK_SECRET`
-6. Redeploy on Vercel for the new variable to take effect
+1. Open the Stripe Dashboard and switch to **Test mode** if you're still testing.
+2. Go to **Developers → Webhooks** and click **Add destination** (or **Create webhook endpoint** depending on the UI).
+3. Follow the "Create an event destination" flow:
+   - Select **Your account** as the source of events.
+   - Choose the API version (default is fine).
+   - In **Events** search for and select `checkout.session.completed` (and `invoice.payment_succeeded` if you want invoice-based updates).
+   - Click **Continue**.
+   - For **Destination type** choose **Webhook endpoint** (or HTTP/Webhook) and click **Continue**.
+   - Configure the endpoint:
+     - **Endpoint URL**: `https://your-domain.vercel.app/api/stripe/webhook` (replace with your Vercel domain)
+     - **Name**: e.g. `Nextura production webhook`
+   - Click **Add destination** / **Create** to save the endpoint.
+
+4. After creating the endpoint, open its details and click **Reveal** (or **Click to reveal**) on the **Signing secret**. Copy the `whsec_...` value.
+5. In your Vercel project, go to **Settings → Environment Variables** and add:
+   - `STRIPE_WEBHOOK_SECRET` = the `whsec_...` value (set for Production and/or Preview as appropriate)
+   - Ensure `NEXTAUTH_URL` is set to your production domain (e.g. `https://nextura-saas.vercel.app`).
+6. Redeploy your Vercel project so the new environment variables are available to the build/runtime.
+
+7. Verify deliveries:
+   - In the Stripe Dashboard, open the webhook endpoint and check **Events** / **Attempts**. You should see recent deliveries for `checkout.session.completed`.
+   - Click an event delivery to see the request/response details and any error returned by your endpoint.
+
+If deliveries fail, copy the response body and HTTP status shown in Stripe and inspect your server logs (Vercel deployment logs) for the same timestamps.
+
+Local testing (optional):
+
+- Install the Stripe CLI and forward events to your local dev server:
+
+```bash
+stripe listen --forward-to http://localhost:3000/api/stripe/webhook
+```
+
+- The CLI will print a `whsec_...` signing secret for the listening session — copy that into your local `.env` as `STRIPE_WEBHOOK_SECRET` and test checkout flows locally.
+
+Notes & troubleshooting:
+
+- If you see "Add destination" instead of "Add endpoint" in the Stripe UI, follow the "Add destination" flow and choose **Webhook endpoint** as the destination type.
+- Make sure you created the Stripe price (starts with `price_...`) and used that `price` in the checkout session.
+- Verify `NEXTAUTH_URL` is correct in Vercel — webhook success redirects use this value for the `success_url` and `cancel_url` in checkout.
 
 ## Environment Variables Reference
 
